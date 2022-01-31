@@ -82,14 +82,14 @@ void loop()
 		}
 		case APIClass::COMM_DISCONNECTED:
 		{
-			strip.fill(RED);
-			strip.show();
+			// strip.fill(RED);
+			// strip.show();
 			break;
 		}
 		case APIClass::COMM_CONNECTED:
 		{
-			strip.fill(PURPLE);
-			strip.show();
+			// strip.fill(PURPLE);
+			// strip.show();
 			break;
 		}
 		case APIClass::DRIVER_SIGNAL:
