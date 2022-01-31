@@ -36,20 +36,22 @@ enum class Manufacturer
 
 enum class APIClass
 {
-    OFF = 0,
-    FIXED_ON = 1,
-    BLINK = 2,
-    COMM_LOSS = 2,
-    COMM_RESTORED = 3,
-    MORSE = 4,
-    DRIVER_SIGNAL = 5,
-    ENDGAME = 6
+    IDLE = 0,
+    OFF = 1,
+    FIXED_ON = 2,
+    BLINK = 3,
+    COMM_LOSS = 4,
+    COMM_RESTORED = 5,
+    MORSE = 6,
+    DRIVER_SIGNAL = 7,
+    ENDGAME =8
 };
 
 enum class APIIndex
 {
     DEFAULT = 0,
     SET_COLOR = 1,
+    SET_BLINK_RATE_MS = 2,
     ///////////////////////////////////////////
     //Support up to a 32 character sequenced morse string, 8 chars per packet
     MORSE_MESSAGE_1 = 1,
