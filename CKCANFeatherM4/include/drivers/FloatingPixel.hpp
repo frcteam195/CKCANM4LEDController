@@ -1,13 +1,14 @@
 #pragma once
 #include <stdint.h>
+#include "RGBColor.hpp"
 
 class FloatingPixel {
 public:
 	int index = 0;
 	int mStripLength;
-	uint32_t mRGBColor;
+	RGBColor mRGBColor;
 
-	FloatingPixel(uint32_t rgbColor, int stripLength);
+	FloatingPixel(RGBColor rgbColor, int stripLength);
 	bool isAtEnd();
 	void increment();
 	void decrement();

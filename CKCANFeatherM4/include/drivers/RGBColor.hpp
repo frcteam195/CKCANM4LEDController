@@ -16,6 +16,15 @@ struct RGBColor
             | ((green << 8) & 0x0000FF00)
             | ((blue) & 0x000000FF);
     };
+
+    bool operator==(const RGBColor& o) const
+    {
+        return (white == o.white
+            && red == o.red
+            && green == o.green
+            && blue == o.blue);
+    };
+    bool operator!=(const RGBColor& o) const { return !((*this) == o); };
 };
 
 struct HSVColor
@@ -23,6 +32,15 @@ struct HSVColor
     uint16_t hue;
     uint8_t saturation;
     uint8_t value;
+
+    bool operator==(const HSVColor& o) const
+    {
+        return (hue == o.hue
+            && saturation == o.saturation
+            && value == o.value);
+    };
+    bool operator!=(const HSVColor& o) const { return !((*this) == o); };
 };
 
 HSVColor RGBtoHSV(RGBColor rgbColor);
+RGBColor HSVtoRGB(HSVColor hsvColor);

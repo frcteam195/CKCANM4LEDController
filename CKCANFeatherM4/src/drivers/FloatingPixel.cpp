@@ -1,6 +1,6 @@
 #include "drivers/FloatingPixel.hpp"
 
-FloatingPixel::FloatingPixel(uint32_t rgbColor, int stripLength) {
+FloatingPixel::FloatingPixel(RGBColor rgbColor, int stripLength) {
     mRGBColor = rgbColor;
     mStripLength = stripLength;
 }

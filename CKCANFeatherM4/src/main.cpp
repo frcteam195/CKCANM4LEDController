@@ -6,7 +6,7 @@
 #include "LEDController.hpp"
 #include "drivers/RGBColor.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 #define DEVICE_ID 1
 
@@ -62,7 +62,7 @@ void loop()
 #ifdef DEBUG
 	if (counter++ % 100 == 0)
 	{
-		Serial.printf("CAN ID: %x\n", CK_CAN_ID);
+		//Serial.printf("CAN ID: %x\n", CK_CAN_ID);
 	}
 #endif
 
@@ -96,6 +96,10 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 						rgb.red = data[1];
 						rgb.green = data[2];
 						rgb.blue = data[3];
+#ifdef DEBUG
+						Serial.printf("W,R,G,B: %x,%x,%x,%x\n", rgb.white, rgb.red, rgb.green, rgb.blue);
+						Serial.printf("uint32_t: %d\n", rgb.getUInt32());
+#endif
 						mLEDController.setLEDColor(rgb);
 					}
 					break;
@@ -129,6 +133,28 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		{
 			mLEDController.setLEDOn();
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
+			switch (apiIndex)
+			{
+				case APIIndex::FLOAT_PIXEL:
+				{
+					if (packetSize >= 8)
+					{
+						RGBColor rgb;
+						rgb.white = data[0];
+						rgb.red = data[1];
+						rgb.green = data[2];
+						rgb.blue = data[3];
+						uint16_t pixelCount = data[4] | ((data[5] << 8) & 0xFF00);
+						uint16_t pixelRepeatSpacing = data[6] | ((data[7] << 8) & 0xFF00);
+						mLEDController.setFloatPixel(rgb, pixelCount, pixelRepeatSpacing);
+					}
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
 			break;
 		}
 		case APIClass::BLINK:

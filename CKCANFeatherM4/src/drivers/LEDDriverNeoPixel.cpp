@@ -12,7 +12,7 @@ void LEDDriverNeoPixel::set(bool on)
 	{
 		if (on)
 		{
-			mStrip->fill(mCurrColor);
+			mStrip->fill(mCurrColor.getUInt32());
 			mStrip->show();
 		}
 		else
@@ -26,8 +26,10 @@ void LEDDriverNeoPixel::set(bool on)
 	}
 }
 
-void LEDDriverNeoPixel::setLEDColor(uint32_t rgbColor)
+void LEDDriverNeoPixel::setLEDColor(RGBColor rgbColor)
 {
+	mCurrColor = rgbColor;
+	set(mOn);
 }
 
 void LEDDriverNeoPixel::processFade()

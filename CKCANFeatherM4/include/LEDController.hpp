@@ -48,6 +48,7 @@ public:
 
 	void setRequestedState(LEDState state);
 	void setLEDDefaultState();
+	void setFloatPixel(RGBColor pixelWRGB, uint16_t pixelCount, uint16_t pixelRepeatSpacing);
 
 	void configureBlink(uint8_t blinkCount, uint16_t blinkDurationMs);
 	void setLEDDefaultState(LEDState defaultState);

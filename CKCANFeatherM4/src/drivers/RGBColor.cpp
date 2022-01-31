@@ -54,35 +54,35 @@ HSVColor RGBtoHSV(RGBColor rgbColor)
     return hsvColor;
 }
 
-void HSVtoRGB(float H, float S, float V)
+RGBColor HSVtoRGB(HSVColor hsvColor)
 {
-    if (H > 360 || H < 0 || S > 100 || S < 0 || V > 100 || V < 0)
+    if (hsvColor.hue > 360 || hsvColor.hue < 0 || hsvColor.saturation > 100 || hsvColor.saturation < 0 || hsvColor.value > 100 || hsvColor.value < 0)
     {
-        return;
+        return RGBColor{};
     }
-    float s = S / 100;
-    float v = V / 100;
+    float s = hsvColor.saturation / 100;
+    float v = hsvColor.value / 100;
     float C = s * v;
-    float X = C * (1 - abs(fmod(H / 60.0, 2) - 1));
+    float X = C * (1 - abs(fmod(hsvColor.hue / 60.0, 2) - 1));
     float m = v - C;
     float r, g, b;
-    if (H >= 0 && H < 60)
+    if (hsvColor.hue >= 0 && hsvColor.hue < 60)
     {
         r = C, g = X, b = 0;
     }
-    else if (H >= 60 && H < 120)
+    else if (hsvColor.hue >= 60 && hsvColor.hue < 120)
     {
         r = X, g = C, b = 0;
     }
-    else if (H >= 120 && H < 180)
+    else if (hsvColor.hue >= 120 && hsvColor.hue < 180)
     {
         r = 0, g = C, b = X;
     }
-    else if (H >= 180 && H < 240)
+    else if (hsvColor.hue >= 180 && hsvColor.hue < 240)
     {
         r = 0, g = X, b = C;
     }
-    else if (H >= 240 && H < 300)
+    else if (hsvColor.hue >= 240 && hsvColor.hue < 300)
     {
         r = X, g = 0, b = C;
     }
@@ -90,7 +90,6 @@ void HSVtoRGB(float H, float S, float V)
     {
         r = C, g = 0, b = X;
     }
-    int R = (r + m) * 255;
-    int G = (g + m) * 255;
-    int B = (b + m) * 255;
+
+    return RGBColor{ 0, (uint8_t)((r + m) * 255), (uint8_t)((g + m) * 255), (uint8_t)((b + m) * 255) };
 }

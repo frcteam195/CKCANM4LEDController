@@ -44,7 +44,7 @@ enum class APIClass
     COMM_RESTORED = 5,
     MORSE = 6,
     DRIVER_SIGNAL = 7,
-    ENDGAME =8
+    ENDGAME = 8
 };
 
 enum class APIIndex
@@ -52,6 +52,7 @@ enum class APIIndex
     DEFAULT = 0,
     SET_COLOR = 1,
     SET_BLINK = 2,
+    FLOAT_PIXEL = 3,
     ///////////////////////////////////////////
     //Support up to a 32 character sequenced morse string, 8 chars per packet
     MORSE_MESSAGE_1 = 1,

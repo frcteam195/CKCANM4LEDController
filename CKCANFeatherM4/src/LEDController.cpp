@@ -28,6 +28,11 @@ void LEDController::configureBlink(uint8_t blinkCount, uint16_t blinkDurationMs)
 	mTotalBlinkDurationMs = mBlinkCount * mBlinkDurationMs;
 }
 
+void LEDController::setFloatPixel(RGBColor pixelWRGB, uint16_t pixelCount, uint16_t pixelRepeatSpacing)
+{
+
+}
+
 void LEDController::setLEDOn()
 {
 	if (!mIsLEDOn || mSystemState == SystemState::FADING || mSystemState == SystemState::FADING_PIXEL)
