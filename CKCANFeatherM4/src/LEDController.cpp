@@ -4,9 +4,9 @@ LEDController::LEDController(Adafruit_NeoPixel *ledStrip) : mLED(ledStrip)
 {
 	mIsLEDOn = true;
 	setLEDOff();
-	mBlinkDuration = DEFAULT_BLINK_DURATION_MS;
+	mBlinkDurationMs = DEFAULT_BLINK_DURATION_MS;
 	mBlinkCount = DEFAULT_BLINK_COUNT;
-	mTotalBlinkDuration = DEFAULT_TOTAL_BLINK_DURATION_MS;
+	mTotalBlinkDurationMs = DEFAULT_TOTAL_BLINK_DURATION_MS;
 }
 
 void LEDController::start()
@@ -14,6 +14,18 @@ void LEDController::start()
 	mSystemState = SystemState::OFF;
 	setLEDColor(0);
 	eTimer.start();
+}
+
+void LEDController::setRequestedState(LEDState state)
+{
+	mRequestedState = state;
+}
+
+void LEDController::configureBlink(uint8_t blinkCount, uint16_t blinkDurationMs)
+{
+	mBlinkCount = blinkCount;
+	mBlinkDurationMs = blinkDurationMs;
+	mTotalBlinkDurationMs = mBlinkCount * mBlinkDurationMs;
 }
 
 void LEDController::setLEDOn()
@@ -37,6 +49,12 @@ void LEDController::setLEDOff()
 void LEDController::setLEDColor(uint32_t wrgb)
 {
 	mLED->fill(wrgb);
+	mLED->show();
+}
+
+void LEDController::setLEDColor(RGBColor wrgb)
+{
+	mLED->fill(wrgb.getUInt32());
 	mLED->show();
 }
 
@@ -88,7 +106,7 @@ void LEDController::run()
 	}
 }
 
-LEDController::SystemState LEDController::defaultStateTransfer()
+SystemState LEDController::defaultStateTransfer()
 {
 	switch (mRequestedState)
 	{
@@ -109,34 +127,44 @@ LEDController::SystemState LEDController::defaultStateTransfer()
 	}
 }
 
-LEDController::SystemState LEDController::handleOff()
+SystemState LEDController::handleOff()
 {
 	setLEDOff();
 	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::handleFixedOn()
+SystemState LEDController::handleFixedOn()
 {
 	setLEDOn();
 	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::handleFade()
+SystemState LEDController::handleFade()
 {
+	//Add
+	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::handleFadePixel()
+SystemState LEDController::handleFadePixel()
 {
+	//Add
+	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::handleBlinking(double timeInState)
+SystemState LEDController::handleBlinking(double timeInState)
 {
+	//Add
+	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::handleMorse()
+SystemState LEDController::handleMorse()
 {
+	//Add
+	return defaultStateTransfer();
 }
 
-LEDController::SystemState LEDController::returnOffMorse()
+SystemState LEDController::returnOffMorse()
 {
+	//Add
+	return defaultStateTransfer();
 }

@@ -5,5 +5,5 @@
 
 void(* resetFunc) (void) = 0;
 
-void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, uint16_t apiIndex);
+void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex apiIndex);
 

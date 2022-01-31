@@ -3,6 +3,8 @@
 #include "frc_can_defines.hpp"
 #include "main.hpp"
 #include <Adafruit_NeoPixel.h>
+#include "LEDController.hpp"
+#include "drivers/RGBColor.hpp"
 
 #define DEBUG
 
@@ -15,7 +17,9 @@ uint32_t counter;
 APIClass prevMode;
 APIClass currMode;
 
-Adafruit_NeoPixel strip(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel mNeoPixelStrip(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+
+LEDController mLEDController(&mNeoPixelStrip);
 
 void setup()
 {
@@ -27,8 +31,8 @@ void setup()
 	pinMode(PIN_CAN_BOOSTEN, OUTPUT);
 	digitalWrite(PIN_CAN_BOOSTEN, true); // turn on booster
 
-	strip.begin();
-	strip.setBrightness(255);
+	mNeoPixelStrip.begin();
+	mNeoPixelStrip.setBrightness(255);
 
 	// start the CAN bus at 1 Mbps
 	if (!CAN.begin(1E6))
@@ -49,8 +53,8 @@ void setup()
 
 	CAN.filterExtended(CK_CAN_ID, CK_CAN_MASK);
 
-	prevMode = APIClass::IDLE;
-	currMode = APIClass::COMM_DISCONNECTED;
+	prevMode = APIClass::OFF;
+	currMode = APIClass::COMM_LOSS;
 }
 
 void loop()
@@ -70,56 +74,79 @@ void loop()
 			receivedData[i] = CAN.read();
 		}
 		APIClass apiClass = (APIClass)((CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET);
-		uint16_t apiIndex = (uint16_t)((CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET);
+		APIIndex apiIndex = (APIIndex)((CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET);
 		handleCANPacket(receivedData, packetSize, apiClass, apiIndex);
-	}
-
-	switch (currMode)
-	{
-		case APIClass::IDLE:
-		{
-			break;
-		}
-		case APIClass::COMM_DISCONNECTED:
-		{
-			// strip.fill(RED);
-			// strip.show();
-			break;
-		}
-		case APIClass::COMM_CONNECTED:
-		{
-			// strip.fill(PURPLE);
-			// strip.show();
-			break;
-		}
-		case APIClass::DRIVER_SIGNAL:
-		{
-			break;
-		}
-		case APIClass::ENDGAME:
-		{
-			break;
-		}
-		default:
-		{
-			break;
-		}
 	}
 }
 
-void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, uint16_t apiIndex)
+void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex apiIndex)
 {
 	switch (apiClass)
 	{
 		case APIClass::IDLE:
 		{
+			switch (apiIndex)
+			{
+				case APIIndex::SET_COLOR:
+				{
+					if (packetSize >= 4)
+					{
+						RGBColor rgb;
+						rgb.white = data[0];
+						rgb.red = data[1];
+						rgb.green = data[2];
+						rgb.blue = data[3];
+						mLEDController.setLEDColor(rgb);
+					}
+					break;
+				}
+				case APIIndex::SET_BLINK:
+				{
+					if (packetSize >= 3)
+					{
+						uint16_t blinkRateMs;
+						uint8_t blinkCount;
+
+						blinkRateMs = data[0] | ((data[1] << 8) & 0xFF00);
+						blinkCount = data[2];
+						mLEDController.configureBlink(blinkCount, blinkRateMs);
+					}
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
 			break;
 		}
-		case APIClass::COMM_DISCONNECTED:
+		case APIClass::OFF:
 		{
+			mLEDController.setLEDOff();
 			break;
 		}
-		case APIClass::COMM_CONNECTED:
+		case APIClass::FIXED_ON:
+		{
+			mLEDController.setLEDOn();
+			mLEDController.setRequestedState(LEDState::FIXED_ON);
+			break;
+		}
+		case APIClass::BLINK:
+		{
+			mLEDController.setRequestedState(LEDState::BLINK);
+			break;
+		}
+		case APIClass::COMM_LOSS:
+		{
+			mLEDController.setRequestedState(LEDState::BLINK);
+			break;
+		}
+		case APIClass::COMM_RESTORED:
+		{
+			mLEDController.setRequestedState(LEDState::FIXED_ON);
+			break;
+		}
+		case APIClass::MORSE:
 		{
 			break;
 		}
@@ -128,10 +155,6 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, uint16_t 
 			break;
 		}
 		case APIClass::ENDGAME:
-		{
-			break;
-		}
-		default:
 		{
 			break;
 		}

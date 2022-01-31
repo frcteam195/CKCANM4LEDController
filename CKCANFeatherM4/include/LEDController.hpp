@@ -2,44 +2,46 @@
 #include <Adafruit_NeoPixel.h>
 #include "utils/ElapsedTimer.hpp"
 #include "utils/Colors.hpp"
+#include "drivers/RGBColor.hpp"
+
+enum class SystemState
+{
+	OFF,
+	FIXED_ON,
+	BLINKING,
+	MORSE,
+	FADING,
+	FADING_PIXEL
+};
+
+enum class MorseState
+{
+	LOAD,
+	BLINK_ON,
+	BLINK_OFF,
+	NEXT_CHAR,
+	NEXT_MORSE_CODE,
+	DONE
+};
+
+enum class LEDState
+{
+	OFF,
+	FIXED_ON,
+	BLINK,
+	MORSE,
+	FADE,
+	FADE_PIXEL
+};
 
 class LEDController
 {
-	enum class SystemState
-	{
-		OFF,
-		FIXED_ON,
-		BLINKING,
-		MORSE,
-		FADING,
-		FADING_PIXEL
-	};
-
-	enum class MorseState
-	{
-		LOAD,
-		BLINK_ON,
-		BLINK_OFF,
-		NEXT_CHAR,
-		NEXT_MORSE_CODE,
-		DONE
-	};
-
-	enum class LEDState
-	{
-		OFF,
-		FIXED_ON,
-		BLINK,
-		MORSE,
-		FADE,
-		FADE_PIXEL
-	};
-
 public:
 	LEDController(Adafruit_NeoPixel *ledStrip);
 	void start();
 	void run();
 
+	void setLEDColor(RGBColor wrgb);
 	void setLEDColor(uint32_t wrgb);
 	void setLEDOn();
 	void setLEDOff();
@@ -47,7 +49,7 @@ public:
 	void setRequestedState(LEDState state);
 	void setLEDDefaultState();
 
-	void configureBlink(int blinkCount, double blinkDuration);
+	void configureBlink(uint8_t blinkCount, uint16_t blinkDurationMs);
 	void setLEDDefaultState(LEDState defaultState);
 
 private:
@@ -76,8 +78,8 @@ private:
 	Adafruit_NeoPixel *mLED;
 	uint32_t mCurrentColor = DEFAULT_COLOR;
 	float mCurrentStateStartTime;
-	float mBlinkDuration;
+	float mBlinkDurationMs;
 	int mBlinkCount;
-	float mTotalBlinkDuration;
+	float mTotalBlinkDurationMs;
 	ElapsedTimer eTimer;
 };
