@@ -3,10 +3,11 @@
 #include "frc_can_defines.hpp"
 #include "main.hpp"
 #include <Adafruit_NeoPixel.h>
+#include "drivers/LEDDriverNeoPixel.hpp"
 #include "LEDController.hpp"
 #include "drivers/RGBColor.hpp"
-
-//#define DEBUG
+#include "Globals.h"
+#include "utils/Colors.hpp"
 
 #define DEVICE_ID 1
 
@@ -18,8 +19,9 @@ APIClass prevMode;
 APIClass currMode;
 
 Adafruit_NeoPixel mNeoPixelStrip(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+LEDDriverNeoPixel mNeoPixelDriver(mNeoPixelStrip);
 
-LEDController mLEDController(&mNeoPixelStrip);
+LEDController mLEDController(&mNeoPixelDriver);
 
 void setup()
 {
@@ -31,8 +33,12 @@ void setup()
 	pinMode(PIN_CAN_BOOSTEN, OUTPUT);
 	digitalWrite(PIN_CAN_BOOSTEN, true); // turn on booster
 
-	mNeoPixelStrip.begin();
-	mNeoPixelStrip.setBrightness(255);
+	mNeoPixelStrip.begin();	//Init strip
+	mLEDController.init();	//Init LED Controller
+
+#ifdef DEBUG
+		Serial.println("Initialized LEDs!");
+#endif
 
 	// start the CAN bus at 1 Mbps
 	if (!CAN.begin(1E6))
@@ -46,7 +52,7 @@ void setup()
 	CK_CAN_ID = (((uint32_t)DeviceType::IOBreakout << DEVICE_TYPE_OFFSET) & DEVICE_TYPE_MASK) |
 				(((uint32_t)Manufacturer::TeamUse << MANUFACTURER_OFFSET) & MANUFACTURER_MASK) |
 				(((uint32_t)APIClass::IDLE << API_CLASS_OFFSET) & API_CLASS_MASK) |
-				((0x0 << API_INDEX_OFFSET) & API_INDEX_MASK) |
+				(((uint32_t)APIIndex::DEFAULT << API_INDEX_OFFSET) & API_INDEX_MASK) |
 				((DEVICE_ID << DEVICE_NUMBER_OFFSET) & DEVICE_NUMBER_MASK);
 
 	CK_CAN_MASK = DEVICE_TYPE_MASK | MANUFACTURER_MASK | DEVICE_NUMBER_MASK;
@@ -59,24 +65,38 @@ void setup()
 
 void loop()
 {
-#ifdef DEBUG
-	if (counter++ % 100 == 0)
-	{
-		//Serial.printf("CAN ID: %x\n", CK_CAN_ID);
-	}
-#endif
-
 	int packetSize = CAN.parsePacket();
 	if (packetSize)
 	{
+
 		uint8_t receivedData[packetSize];
 		for (int i = 0; i < packetSize; i++) {
 			receivedData[i] = CAN.read();
 		}
+
+#ifdef DEBUG
+		// if (counter++ % 100 == 0)
+		// {
+		Serial.printf("CAN Mask: %x\n", CK_CAN_MASK);
+		// if ((CAN.packetId() & CK_CAN_MASK) == CK_CAN_ID)
+		// {
+			Serial.printf("Got packet CAN ID: %x\n", CAN.packetId());
+			Serial.printf("DevType: %x, MfgType: %x, APIClass: %x, APIIndex: %x, DevID: %x\n",
+				(CAN.packetId() & DEVICE_TYPE_MASK) >> DEVICE_TYPE_OFFSET,
+				(CAN.packetId() & MANUFACTURER_MASK) >> MANUFACTURER_OFFSET,
+				(CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET,
+				(CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET,
+				(CAN.packetId()) & DEVICE_NUMBER_MASK
+			);
+		// }
+		// }
+#endif
 		APIClass apiClass = (APIClass)((CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET);
 		APIIndex apiIndex = (APIIndex)((CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET);
 		handleCANPacket(receivedData, packetSize, apiClass, apiIndex);
 	}
+	
+	mLEDController.run();
 }
 
 void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex apiIndex)
@@ -100,7 +120,21 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 						Serial.printf("W,R,G,B: %x,%x,%x,%x\n", rgb.white, rgb.red, rgb.green, rgb.blue);
 						Serial.printf("uint32_t: %d\n", rgb.getUInt32());
 #endif
-						mLEDController.setLEDColor(rgb);
+						mLEDController.setColor(rgb);
+					}
+					break;
+				}
+				case APIIndex::SET_BRIGHTNESS:
+				{
+					if (packetSize >= 1)
+					{
+						uint8_t brightness;
+						brightness = data[0];
+
+#ifdef DEBUG
+						Serial.printf("brightness: %d\n", brightness);
+#endif
+						mLEDController.setBrightness(brightness);
 					}
 					break;
 				}
@@ -126,12 +160,15 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		}
 		case APIClass::OFF:
 		{
-			mLEDController.setLEDOff();
+			mLEDController.setOff();
 			break;
 		}
 		case APIClass::FIXED_ON:
 		{
-			mLEDController.setLEDOn();
+#ifdef DEBUG
+			Serial.println("Got fixed on CAN packet!");
+#endif
+			mLEDController.setOn();
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
 			switch (apiIndex)
 			{
@@ -146,7 +183,10 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 						rgb.blue = data[3];
 						uint16_t pixelCount = data[4] | ((data[5] << 8) & 0xFF00);
 						uint16_t pixelRepeatSpacing = data[6] | ((data[7] << 8) & 0xFF00);
-						mLEDController.setFloatPixel(rgb, pixelCount, pixelRepeatSpacing);
+						(void)rgb;
+						(void)pixelCount;
+						(void)pixelRepeatSpacing;
+						// mLEDController.setFloatPixel(rgb, pixelCount, pixelRepeatSpacing);
 					}
 					break;
 				}
@@ -164,16 +204,47 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		}
 		case APIClass::COMM_LOSS:
 		{
-			mLEDController.setRequestedState(LEDState::BLINK);
+			mLEDController.setColor(RED);
+			mLEDController.setBrightness(0xFF);
+			mLEDController.configMessage("SOS");
 			break;
 		}
 		case APIClass::COMM_RESTORED:
 		{
+			mLEDController.configureDefaultState(LEDState::FIXED_ON);
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
 			break;
 		}
 		case APIClass::MORSE:
 		{
+			std::string msg;
+			if (packetSize > 0)
+			{
+				for (uint8_t i = 0; i < packetSize; i++)
+				{
+					msg.push_back((char)data[i]);
+				}
+
+				switch (apiIndex)
+				{
+					case APIIndex::MORSE_MESSAGE_1:
+					{
+
+						mLEDController.configMessage(msg);
+						break;
+					}
+					case APIIndex::MORSE_MESSAGE_2:
+					case APIIndex::MORSE_MESSAGE_3:
+					case APIIndex::MORSE_MESSAGE_4:
+					{
+						mLEDController.addToMessage(msg);
+						break;
+					}
+
+					default:
+						break;
+				}
+			}
 			break;
 		}
 		case APIClass::DRIVER_SIGNAL:

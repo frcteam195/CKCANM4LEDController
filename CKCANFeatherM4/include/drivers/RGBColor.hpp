@@ -17,6 +17,11 @@ struct RGBColor
             | ((blue) & 0x000000FF);
     };
 
+    static RGBColor fromUInt32(uint32_t wrgb)
+    {
+        return RGBColor{(uint8_t)((wrgb >> 24) & 0xFF), (uint8_t)((wrgb >> 16) & 0xFF), (uint8_t)((wrgb >> 8) & 0xFF), (uint8_t)((wrgb) & 0xFF)};
+    }
+
     bool operator==(const RGBColor& o) const
     {
         return (white == o.white
