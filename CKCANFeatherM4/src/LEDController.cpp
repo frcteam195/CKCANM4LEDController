@@ -115,6 +115,7 @@ SystemState LEDController::handleBlinking(uint32_t timeInStateMs)
 		//setRequestedState(LEDState.OFF);
 		setDefaultState();
 		setOff();
+		setColor(DEFAULT_COLOR);
 		return SystemState::OFF;
 	}
 

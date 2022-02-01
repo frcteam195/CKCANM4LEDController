@@ -226,7 +226,9 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 			mLEDController.setColor(DEFAULT_COLOR);
 			mLEDController.setBrightness(0xFF);
 			mLEDController.configureDefaultState(LEDState::FIXED_ON);
-			mLEDController.setRequestedState(LEDState::FIXED_ON);
+			mLEDController.configureBlink(5, 250);
+			mLEDController.setColor(GREEN);
+			mLEDController.setRequestedState(LEDState::BLINK);
 			break;
 		}
 		case APIClass::MORSE:
