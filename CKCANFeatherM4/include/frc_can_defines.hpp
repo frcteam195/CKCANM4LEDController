@@ -53,7 +53,8 @@ enum class APIIndex
     SET_COLOR = 1,
     SET_BRIGHTNESS = 2,
     SET_BLINK = 3,
-    FLOAT_PIXEL = 4,
+    SET_DEFAULT_STATE = 4,
+    FLOAT_PIXEL = 5,
     ///////////////////////////////////////////
     //Support up to a 32 character sequenced morse string, 8 chars per packet
     MORSE_MESSAGE_1 = 1,

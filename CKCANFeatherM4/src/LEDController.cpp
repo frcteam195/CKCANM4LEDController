@@ -242,7 +242,7 @@ SystemState LEDController::returnOffMorse()
 void LEDController::setDefaultState()
 {
 	setRequestedState(mDefaultState);
-	setColor(DEFAULT_COLOR);
+	// setColor(DEFAULT_COLOR);
 }
 
 void LEDController::setRequestedState(LEDState state)

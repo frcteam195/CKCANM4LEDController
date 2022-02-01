@@ -152,6 +152,16 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 					}
 					break;
 				}
+				case APIIndex::SET_DEFAULT_STATE:
+				{
+					if (packetSize > 0)
+					{
+						LEDState ledState;
+						ledState = (LEDState)data[0];
+						mLEDController.configureDefaultState(ledState);
+					}
+					break;
+				}
 				default:
 				{
 					break;
@@ -207,6 +217,7 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		{
 			mLEDController.setColor(RED);
 			mLEDController.setBrightness(0xFF);
+			mLEDController.configureDefaultState(LEDState::MORSE);
 			mLEDController.configMessage("SOS", true);
 			break;
 		}
@@ -214,6 +225,7 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		{
 			mLEDController.setColor(DEFAULT_COLOR);
 			mLEDController.setBrightness(0xFF);
+			mLEDController.configureDefaultState(LEDState::FIXED_ON);
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
 			break;
 		}
