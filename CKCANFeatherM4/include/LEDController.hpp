@@ -47,7 +47,7 @@ public:
     void setBrightness(uint8_t brightness);
     void configureBlink(int blinkCount, double blinkDuration);
     void configureDefaultState(LEDState defaultState);
-    void configMessage(std::string message, bool autoStartMessage = true, bool loopMsg = true);
+    void configMessage(std::string message, bool autoStartMessage = true);
     void addToMessage(std::string message);
 
     void setRequestedState(LEDState state);

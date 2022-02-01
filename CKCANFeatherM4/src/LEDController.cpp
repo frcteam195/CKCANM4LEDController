@@ -38,7 +38,7 @@ void LEDController::run()
 	if (mTimeoutTimer.isTimedOut())
 	{
 #ifdef DEBUG
-		Serial.println("LEDController loop time to run...");
+		// Serial.println("LEDController loop time to run...");
 #endif
 		SystemState newState = SystemState::OFF;
 		uint32_t timeInStateMs = millis() - mCurrentStateStartTimeMs;
@@ -66,8 +66,8 @@ void LEDController::run()
 		}
 
 #ifdef DEBUG
-		Serial.printf("Curr State: %d\n", mSystemState);
-		Serial.printf("New State: %d\n", newState);
+		// Serial.printf("Curr State: %d\n", mSystemState);
+		// Serial.printf("New State: %d\n", newState);
 #endif
 
 		if (newState != mSystemState) {
@@ -148,6 +148,9 @@ SystemState LEDController::handleMorse()
 		}
 		case MorseState::NEXT_CHAR:
 		{
+#ifdef DEBUG
+			Serial.printf("Curr Morse Message Size: %d\n", runningMorseMessage.size());
+#endif 
 			if (runningMorseMessage.size() > 0) {
 				std::string s = runningMorseMessage.front();
 				runningMorseMessage.pop_front();
@@ -225,16 +228,15 @@ SystemState LEDController::returnOffMorse()
 	mMorseState = MorseState::LOAD;
 	morseStateTimeMs = 0;
 	currentMorseChar = ' ';
-	//setLEDDefaultState();
-	if (!mLoopMsg)
-	{
-		setOff();
-		return SystemState::OFF;
-	}
-	else
-	{
-		return SystemState::MORSE;
-	}
+
+#ifdef DEBUG
+	Serial.printf("Loop state: %d\n", (int)mLoopMsg);
+#endif
+
+	setDefaultState();
+
+	setOff();
+	return SystemState::OFF;
 }
 
 void LEDController::setDefaultState()
@@ -297,7 +299,7 @@ void LEDController::configureBlink(int blinkCount, double blinkDurationMs)
 	mTotalBlinkDurationMs = mBlinkCount * mBlinkDurationMs;
 }
 
-void LEDController::configMessage(std::string message, bool autoStartMessage, bool loopMsg)
+void LEDController::configMessage(std::string message, bool autoStartMessage)
 {
 	if (message != mPrevMessage) {
 		MorseCodeTranslator::getTranslatedMsg(message, requestedMorseMessage);
@@ -308,8 +310,6 @@ void LEDController::configMessage(std::string message, bool autoStartMessage, bo
 	{
 		setRequestedState(LEDState::MORSE);
 	}
-
-	mLoopMsg = loopMsg;
 }
 
 void LEDController::addToMessage(std::string message)

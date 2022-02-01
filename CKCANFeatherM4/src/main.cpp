@@ -35,6 +35,7 @@ void setup()
 
 	mNeoPixelStrip.begin();	//Init strip
 	mLEDController.init();	//Init LED Controller
+	mLEDController.configureDefaultState(LEDState::FIXED_ON);
 
 #ifdef DEBUG
 		Serial.println("Initialized LEDs!");
@@ -77,17 +78,17 @@ void loop()
 #ifdef DEBUG
 		// if (counter++ % 100 == 0)
 		// {
-		Serial.printf("CAN Mask: %x\n", CK_CAN_MASK);
+		// Serial.printf("CAN Mask: %x\n", CK_CAN_MASK);
 		// if ((CAN.packetId() & CK_CAN_MASK) == CK_CAN_ID)
 		// {
-			Serial.printf("Got packet CAN ID: %x\n", CAN.packetId());
-			Serial.printf("DevType: %x, MfgType: %x, APIClass: %x, APIIndex: %x, DevID: %x\n",
-				(CAN.packetId() & DEVICE_TYPE_MASK) >> DEVICE_TYPE_OFFSET,
-				(CAN.packetId() & MANUFACTURER_MASK) >> MANUFACTURER_OFFSET,
-				(CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET,
-				(CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET,
-				(CAN.packetId()) & DEVICE_NUMBER_MASK
-			);
+			// Serial.printf("Got packet CAN ID: %x\n", CAN.packetId());
+			// Serial.printf("DevType: %x, MfgType: %x, APIClass: %x, APIIndex: %x, DevID: %x\n",
+			// 	(CAN.packetId() & DEVICE_TYPE_MASK) >> DEVICE_TYPE_OFFSET,
+			// 	(CAN.packetId() & MANUFACTURER_MASK) >> MANUFACTURER_OFFSET,
+			// 	(CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET,
+			// 	(CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET,
+			// 	(CAN.packetId()) & DEVICE_NUMBER_MASK
+			// );
 		// }
 		// }
 #endif
@@ -117,8 +118,8 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 						rgb.green = data[2];
 						rgb.blue = data[3];
 #ifdef DEBUG
-						Serial.printf("W,R,G,B: %x,%x,%x,%x\n", rgb.white, rgb.red, rgb.green, rgb.blue);
-						Serial.printf("uint32_t: %d\n", rgb.getUInt32());
+						// Serial.printf("W,R,G,B: %x,%x,%x,%x\n", rgb.white, rgb.red, rgb.green, rgb.blue);
+						// Serial.printf("uint32_t: %d\n", rgb.getUInt32());
 #endif
 						mLEDController.setColor(rgb);
 					}
@@ -132,7 +133,7 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 						brightness = data[0];
 
 #ifdef DEBUG
-						Serial.printf("brightness: %d\n", brightness);
+						// Serial.printf("brightness: %d\n", brightness);
 #endif
 						mLEDController.setBrightness(brightness);
 					}
@@ -166,7 +167,7 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		case APIClass::FIXED_ON:
 		{
 #ifdef DEBUG
-			Serial.println("Got fixed on CAN packet!");
+			// Serial.println("Got fixed on CAN packet!");
 #endif
 			mLEDController.setOn();
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
@@ -206,12 +207,13 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		{
 			mLEDController.setColor(RED);
 			mLEDController.setBrightness(0xFF);
-			mLEDController.configMessage("SOS");
+			mLEDController.configMessage("SOS", true);
 			break;
 		}
 		case APIClass::COMM_RESTORED:
 		{
-			mLEDController.configureDefaultState(LEDState::FIXED_ON);
+			mLEDController.setColor(DEFAULT_COLOR);
+			mLEDController.setBrightness(0xFF);
 			mLEDController.setRequestedState(LEDState::FIXED_ON);
 			break;
 		}
@@ -230,7 +232,7 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 					case APIIndex::MORSE_MESSAGE_1:
 					{
 
-						mLEDController.configMessage(msg);
+						mLEDController.configMessage(msg, true);
 						break;
 					}
 					case APIIndex::MORSE_MESSAGE_2:
