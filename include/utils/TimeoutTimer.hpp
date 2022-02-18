@@ -10,7 +10,7 @@ public:
     int32_t timeLeft();
 
 private:
-    uint32_t timeoutMs;
-    bool firstRun;
+    uint32_t timeoutMs = 0;
+    bool firstRun = true;
     ElapsedTimer eTimer;
 };

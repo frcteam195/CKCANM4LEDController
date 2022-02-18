@@ -56,7 +56,7 @@ private:
     SystemState defaultStateTransfer();
     SystemState handleOff();
     SystemState handleFixedOn();
-    SystemState handleBlinking(uint32_t timeInState);
+    SystemState handleBlinking(uint32_t timeInStateMs);
     SystemState handleMorse();
     SystemState returnOffMorse();
     void setDefaultState();
@@ -66,12 +66,14 @@ private:
     LEDState mDefaultState = LEDState::FIXED_ON;
 	SystemState mSystemState = SystemState::OFF;
 	LEDState mRequestedState = LEDState::OFF;
-	bool mIsLEDOn;
-    uint32_t mCurrentStateStartTimeMs;
-    uint32_t mBlinkDurationMs;
-    uint32_t mBlinkCount;
-    uint32_t mTotalBlinkDurationMs;
+	bool mIsLEDOn = false;
+    uint32_t mCurrentStateStartTimeMs = 0;
+    uint32_t mBlinkDurationMs = 0;
+    uint32_t mBlinkCount = 0;
+    uint32_t mTotalBlinkDurationMs = 0;
     TimeoutTimer mTimeoutTimer;
+    TimeoutTimer* mBlinkTotalTimer = nullptr;
+    TimeoutTimer* mBlinkOnTimer = nullptr;
 
     std::deque<std::string> requestedMorseMessage;
     std::deque<std::string>  runningMorseMessage;
@@ -84,10 +86,19 @@ private:
 
     static constexpr uint32_t MIN_LED_THREAD_LOOP_MS = 50;
 	static constexpr uint32_t DEFAULT_BLINK_COUNT = 6;
-	static constexpr uint32_t DEFAULT_BLINK_DURATION_MS = 200;
+	static constexpr uint32_t DEFAULT_BLINK_DURATION_MS = 350;
 	static constexpr uint32_t DEFAULT_TOTAL_BLINK_DURATION_MS = DEFAULT_BLINK_COUNT * DEFAULT_BLINK_DURATION_MS;
-	static constexpr float SLOW_BLINK_DIVISOR = 1.5;
-	static constexpr float FAST_BLINK_DIVISOR = 3;
+	static constexpr float SLOW_BLINK_DIVISOR = 1.4;
+	static constexpr float FAST_BLINK_DIVISOR = 3.5;
 	static constexpr uint32_t LETTER_PAUSE_MS = 500;
 	static constexpr uint32_t WORD_PAUSE_MS = 750;
+
+    // static constexpr uint32_t MIN_LED_THREAD_LOOP_MS = 50;
+	// static constexpr uint32_t DEFAULT_BLINK_COUNT = 6;
+	// static constexpr uint32_t DEFAULT_BLINK_DURATION_MS = 750;
+	// static constexpr uint32_t DEFAULT_TOTAL_BLINK_DURATION_MS = DEFAULT_BLINK_COUNT * DEFAULT_BLINK_DURATION_MS;
+	// static constexpr float SLOW_BLINK_DIVISOR = 1;
+	// static constexpr float FAST_BLINK_DIVISOR = 2;
+	// static constexpr uint32_t LETTER_PAUSE_MS = 500;
+	// static constexpr uint32_t WORD_PAUSE_MS = 1250;
 };

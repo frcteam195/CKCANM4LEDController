@@ -119,7 +119,7 @@ SystemState LEDController::handleBlinking(uint32_t timeInStateMs)
 		return SystemState::OFF;
 	}
 
-	uint32_t cycleNum = (uint32_t) (timeInStateMs / (mBlinkDurationMs / 2));
+	uint32_t cycleNum = (uint32_t) (timeInStateMs / (mBlinkDurationMs));
 	if ((cycleNum % 2) == 0) {
 		setOn();
 	} else {

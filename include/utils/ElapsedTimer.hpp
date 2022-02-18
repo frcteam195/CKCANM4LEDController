@@ -7,5 +7,5 @@ public:
     void start();
     uint32_t hasElapsedMs();
 private:
-    uint32_t startTime;
+    uint32_t startTime = 0;
 };

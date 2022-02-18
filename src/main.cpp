@@ -10,18 +10,29 @@
 #include "utils/Colors.hpp"
 
 #define DEVICE_ID 1
+#define PIN_NEOPIXEL_STRIP_1 24
+#define PIN_NEOPIXEL_STRIP_2 14
 
-uint32_t CK_CAN_ID;
-uint32_t CK_CAN_MASK;
+#define FRC_HEARTBEAT_ID 0x01011840
 
-uint32_t counter;
-APIClass prevMode;
-APIClass currMode;
+uint32_t CK_CAN_ID = 0;
+uint32_t CK_CAN_MASK = 0;
 
-Adafruit_NeoPixel mNeoPixelStrip(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+uint32_t counter = 0;
+APIClass prevMode = APIClass::IDLE;
+APIClass currMode = APIClass::IDLE;
+
+Adafruit_NeoPixel mOnboardLED(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+LEDDriverNeoPixel mOnboardLEDDriver(mOnboardLED);
+LEDController mOnboardLEDController(&mOnboardLEDDriver);
+
+Adafruit_NeoPixel mNeoPixelStrip(60, PIN_NEOPIXEL_STRIP_1, NEO_GRBW + NEO_KHZ800);
 LEDDriverNeoPixel mNeoPixelDriver(mNeoPixelStrip);
-
 LEDController mLEDController(&mNeoPixelDriver);
+TimeoutTimer tt(1000);
+
+#define DEFAULT_CAN_TIMEOUT 2000
+int32_t mValidCANTimeout = 0;
 
 void setup()
 {
@@ -32,6 +43,18 @@ void setup()
 	digitalWrite(PIN_CAN_STANDBY, false); // turn off STANDBY
 	pinMode(PIN_CAN_BOOSTEN, OUTPUT);
 	digitalWrite(PIN_CAN_BOOSTEN, true); // turn on booster
+
+	pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
+	digitalWrite(PIN_NEOPIXEL_POWER, true);
+
+	mOnboardLED.begin();
+	// mOnboardLED.clear();
+	// mOnboardLED.show();
+	mOnboardLEDController.init();
+	mOnboardLEDController.configureDefaultState(LEDState::BLINK);
+	mOnboardLEDController.setColor(0x00FF0000);
+	mOnboardLEDController.setBrightness(0xFF);
+	mOnboardLEDController.setRequestedState(LEDState::BLINK);
 
 	mNeoPixelStrip.begin();	//Init strip
 	mLEDController.init();	//Init LED Controller
@@ -58,7 +81,7 @@ void setup()
 
 	CK_CAN_MASK = DEVICE_TYPE_MASK | MANUFACTURER_MASK | DEVICE_NUMBER_MASK;
 
-	CAN.filterExtended(CK_CAN_ID, CK_CAN_MASK);
+	//CAN.filterExtended(CK_CAN_ID, CK_CAN_MASK & FRC_HEARTBEAT_ID);
 
 	prevMode = APIClass::OFF;
 	currMode = APIClass::COMM_LOSS;
@@ -69,35 +92,70 @@ void loop()
 	int packetSize = CAN.parsePacket();
 	if (packetSize)
 	{
+		mValidCANTimeout = DEFAULT_CAN_TIMEOUT;
+		mOnboardLEDController.setColor(0x00FFBF00);
+		mOnboardLEDController.configureDefaultState(LEDState::BLINK);
 
 		uint8_t receivedData[packetSize];
 		for (int i = 0; i < packetSize; i++) {
 			receivedData[i] = CAN.read();
 		}
 
+		uint32_t packetID = (uint32_t)CAN.packetId();
 #ifdef DEBUG
 		// if (counter++ % 100 == 0)
 		// {
-		// Serial.printf("CAN Mask: %x\n", CK_CAN_MASK);
-		// if ((CAN.packetId() & CK_CAN_MASK) == CK_CAN_ID)
-		// {
-			// Serial.printf("Got packet CAN ID: %x\n", CAN.packetId());
-			// Serial.printf("DevType: %x, MfgType: %x, APIClass: %x, APIIndex: %x, DevID: %x\n",
-			// 	(CAN.packetId() & DEVICE_TYPE_MASK) >> DEVICE_TYPE_OFFSET,
-			// 	(CAN.packetId() & MANUFACTURER_MASK) >> MANUFACTURER_OFFSET,
-			// 	(CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET,
-			// 	(CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET,
-			// 	(CAN.packetId()) & DEVICE_NUMBER_MASK
-			// );
-		// }
+			// Serial.printf("CAN Mask: %x\n", CK_CAN_MASK);
+			if ((packetID & CK_CAN_MASK) == CK_CAN_ID)
+			{
+				Serial.printf("Got packet CAN ID: %x\n", CAN.packetId());
+				Serial.printf("DevType: %x, MfgType: %x, APIClass: %x, APIIndex: %x, DevID: %x\n",
+					(packetID & DEVICE_TYPE_MASK) >> DEVICE_TYPE_OFFSET,
+					(packetID & MANUFACTURER_MASK) >> MANUFACTURER_OFFSET,
+					(packetID & API_CLASS_MASK) >> API_CLASS_OFFSET,
+					(packetID & API_INDEX_MASK) >> API_INDEX_OFFSET,
+					(packetID) & DEVICE_NUMBER_MASK
+				);
+			}
 		// }
 #endif
-		APIClass apiClass = (APIClass)((CAN.packetId() & API_CLASS_MASK) >> API_CLASS_OFFSET);
-		APIIndex apiIndex = (APIIndex)((CAN.packetId() & API_INDEX_MASK) >> API_INDEX_OFFSET);
-		handleCANPacket(receivedData, packetSize, apiClass, apiIndex);
+
+		if ((packetID & CK_CAN_MASK) == CK_CAN_ID)
+		{
+			APIClass apiClass = (APIClass)((packetID & API_CLASS_MASK) >> API_CLASS_OFFSET);
+			APIIndex apiIndex = (APIIndex)((packetID & API_INDEX_MASK) >> API_INDEX_OFFSET);
+			handleCANPacket(receivedData, packetSize, apiClass, apiIndex);
+		}
+		else if (packetID == FRC_HEARTBEAT_ID)
+		{
+			if (packetSize >= 5)
+			{
+				bool robotEnabled = (receivedData[4] & 0x10) > 0;
+				if (robotEnabled)
+				{
+					mOnboardLEDController.setColor(0x0000FF00);
+					mOnboardLEDController.configureDefaultState(LEDState::FIXED_ON);
+				}
+			}
+		}
 	}
+
+	if (--mValidCANTimeout <= 0)
+	{
+		mOnboardLEDController.setColor(0x00FF0000);
+		mOnboardLEDController.configureDefaultState(LEDState::BLINK);
+	}
+
+#ifdef DEBUG
+	if (tt.isTimedOut())
+	{
+		Serial.printf("Timeout 1s, Millis: %d \n", millis());
+		tt.reset();
+	}
+#endif
 	
 	mLEDController.run();
+	mOnboardLEDController.run();
 }
 
 void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex apiIndex)
