@@ -8,16 +8,19 @@ LEDDriverNeoPixel::LEDDriverNeoPixel(Adafruit_NeoPixel &strip) : mStrip(&strip)
 
 void LEDDriverNeoPixel::set(bool on)
 {
-	if (mOn != on || mCurrColor != mPrevColor || mCurrBrightness != mPrevBrightness)
+	// if (mOn != on || mCurrColor != mPrevColor || mCurrBrightness != mPrevBrightness)
+	// {
+	mStrip->fill(on ? mCurrColor.getUInt32() : 0);
+	mStrip->setBrightness(mCurrBrightness);
+	if (mStrip->canShow())
 	{
-		mStrip->fill(on ? mCurrColor.getUInt32() : 0);
-		mStrip->setBrightness(mCurrBrightness);
-		mStrip->show();
-
-		mPrevColor = mCurrColor;
-		mPrevBrightness = mCurrBrightness;
-		mOn = on;
+		mStrip->show();			
 	}
+
+	mPrevColor = mCurrColor;
+	mPrevBrightness = mCurrBrightness;
+	mOn = on;
+	// }
 }
 
 void LEDDriverNeoPixel::setColor(RGBColor rgbColor)

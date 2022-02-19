@@ -75,6 +75,8 @@ void LEDController::run()
 			mCurrentStateStartTimeMs = millis();
 		}
 
+		mLEDDriver->set(mIsLEDOn);
+
 		mTimeoutTimer.reset();
 	}
 }

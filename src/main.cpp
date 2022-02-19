@@ -3,6 +3,7 @@
 #include "frc_can_defines.hpp"
 #include "main.hpp"
 #include <Adafruit_NeoPixel.h>
+#include <Adafruit_SleepyDog.h>
 #include "drivers/LEDDriverNeoPixel.hpp"
 #include "LEDController.hpp"
 #include "drivers/RGBColor.hpp"
@@ -29,13 +30,18 @@ LEDController mOnboardLEDController(&mOnboardLEDDriver);
 Adafruit_NeoPixel mNeoPixelStrip(60, PIN_NEOPIXEL_STRIP_1, NEO_GRBW + NEO_KHZ800);
 LEDDriverNeoPixel mNeoPixelDriver(mNeoPixelStrip);
 LEDController mLEDController(&mNeoPixelDriver);
+
+#ifdef DEBUG
 TimeoutTimer tt(1000);
+#endif
 
 #define DEFAULT_CAN_TIMEOUT 2000
 int32_t mValidCANTimeout = 0;
 
 void setup()
 {
+	Watchdog.enable(2000);
+
 #ifdef DEBUG
 	Serial.begin(9600);
 #endif	
@@ -48,8 +54,6 @@ void setup()
 	digitalWrite(PIN_NEOPIXEL_POWER, true);
 
 	mOnboardLED.begin();
-	// mOnboardLED.clear();
-	// mOnboardLED.show();
 	mOnboardLEDController.init();
 	mOnboardLEDController.configureDefaultState(LEDState::BLINK);
 	mOnboardLEDController.setColor(0x00FF0000);
@@ -85,6 +89,8 @@ void setup()
 
 	prevMode = APIClass::OFF;
 	currMode = APIClass::COMM_LOSS;
+
+	Watchdog.reset();
 }
 
 void loop()
@@ -156,6 +162,8 @@ void loop()
 	
 	mLEDController.run();
 	mOnboardLEDController.run();
+
+	Watchdog.reset();
 }
 
 void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex apiIndex)
