@@ -44,7 +44,8 @@ enum class APIClass
     COMM_RESTORED = 5,
     MORSE = 6,
     DRIVER_SIGNAL = 7,
-    ENDGAME = 8
+    ENDGAME = 8,
+    FADE = 9
 };
 
 enum class APIIndex

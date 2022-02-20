@@ -5,6 +5,7 @@
 #include <deque>
 #include "drivers/LEDDriver.hpp"
 #include "utils/TimeoutTimer.hpp"
+#include "utils/Colors.hpp"
 
 // Internal state of the system
 enum class SystemState
@@ -12,7 +13,8 @@ enum class SystemState
     OFF,
     FIXED_ON,
     BLINKING,
-    MORSE
+    MORSE,
+    FADING
 };
 
 enum class MorseState
@@ -30,7 +32,8 @@ enum class LEDState
     OFF,
     FIXED_ON,
     BLINK,
-    MORSE
+    MORSE,
+    FADE
 };
 
 class LEDController
@@ -42,23 +45,27 @@ public:
 
     void setOff();
     void setOn();
-    void setColor(RGBColor wrgb);
-    void setColor(uint32_t wrgb);
+    void setColor(RGBColor wrgb, bool ignoreLock = false);
+    void setColor(uint32_t wrgb, bool ignoreLock = false);
+    void configBrightness(uint8_t maxBrightness, uint8_t minBrightness);
     void setBrightness(uint8_t brightness);
     void configureBlink(int blinkCount, double blinkDuration);
     void configureDefaultState(LEDState defaultState);
     void configMessage(std::string message, bool autoStartMessage = true);
     void addToMessage(std::string message);
+    void setColorLock(bool locked);
 
     void setRequestedState(LEDState state);
+    LEDState getRequestedState();
 
 private:
-    SystemState defaultStateTransfer();
+    SystemState defaultStateTransfer(bool resetColorLock = true);
     SystemState handleOff();
     SystemState handleFixedOn();
     SystemState handleBlinking(uint32_t timeInStateMs);
     SystemState handleMorse();
     SystemState returnOffMorse();
+    SystemState handleFading();
     void setDefaultState();
 
 
@@ -67,6 +74,7 @@ private:
 	SystemState mSystemState = SystemState::OFF;
 	LEDState mRequestedState = LEDState::OFF;
 	bool mIsLEDOn = false;
+    bool mColorLocked = false;
     uint32_t mCurrentStateStartTimeMs = 0;
     uint32_t mBlinkDurationMs = 0;
     uint32_t mBlinkCount = 0;
@@ -74,6 +82,12 @@ private:
     TimeoutTimer mTimeoutTimer;
     TimeoutTimer* mBlinkTotalTimer = nullptr;
     TimeoutTimer* mBlinkOnTimer = nullptr;
+    uint32_t mDefaultColor = DEFAULT_COLOR;
+
+    int16_t mBrightness = 0;
+    uint8_t mMaxBrightness = 255;
+    uint8_t mMinBrightness = 50;
+    bool fadeDir = false;
 
     std::deque<std::string> requestedMorseMessage;
     std::deque<std::string>  runningMorseMessage;

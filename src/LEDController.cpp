@@ -1,6 +1,5 @@
 #include "LEDController.hpp"
 #include "utils/MorseCodeTranslator.hpp"
-#include "utils/Colors.hpp"
 #include "Globals.h"
 
 LEDController::LEDController(LEDDriver* ledDriver) : mLEDDriver(ledDriver), mTimeoutTimer(MIN_LED_THREAD_LOOP_MS) {}
@@ -14,7 +13,7 @@ void LEDController::init()
 	mIsLEDOn = true;
 	setOff();
 
-	setColor(DEFAULT_COLOR);
+	setColor(mDefaultColor);
 	mBlinkDurationMs = DEFAULT_BLINK_DURATION_MS;
 	mBlinkCount = DEFAULT_BLINK_COUNT;
 	mTotalBlinkDurationMs = DEFAULT_TOTAL_BLINK_DURATION_MS;
@@ -63,6 +62,11 @@ void LEDController::run()
 				newState = handleMorse();
 				break;
 			}
+			case SystemState::FADING:
+			{
+				newState = handleFading();
+				break;
+			}
 		}
 
 #ifdef DEBUG
@@ -81,8 +85,13 @@ void LEDController::run()
 	}
 }
 
-SystemState LEDController::defaultStateTransfer()
+SystemState LEDController::defaultStateTransfer(bool resetColorLock)
 {
+	if (resetColorLock)
+	{
+		setColorLock(false);
+	}
+
 	switch (mRequestedState) {
 		case LEDState::OFF:
 			return SystemState::OFF;
@@ -92,6 +101,8 @@ SystemState LEDController::defaultStateTransfer()
 			return SystemState::FIXED_ON;
 		case LEDState::MORSE:
 			return SystemState::MORSE;
+		case LEDState::FADE:
+			return SystemState::FADING;
 		default:
 			return SystemState::OFF;
 	}
@@ -109,6 +120,43 @@ SystemState LEDController::handleFixedOn()
 	return defaultStateTransfer();
 }
 
+SystemState LEDController::handleFading()
+{
+	if (fadeDir)
+	{
+		if (mBrightness < mMaxBrightness)
+		{
+			mBrightness += 7;
+		}
+		else if (mBrightness >= mMaxBrightness)
+		{
+			fadeDir = false;
+		}
+	}
+	else
+	{
+		if (mBrightness > mMinBrightness)
+		{
+			mBrightness -= 7;
+		}
+		else if (mBrightness <= mMinBrightness)
+		{
+			fadeDir = true;
+		}
+	}
+
+	mBrightness = std::max((int16_t)mMinBrightness, std::min(mBrightness, (int16_t)mMaxBrightness));
+
+#ifdef DEBUG
+	Serial.printf("Brightness: %d\n", mBrightness);
+#endif
+
+	mLEDDriver->setBrightness((uint8_t)mBrightness);
+	setOn();
+
+	return defaultStateTransfer();
+}
+
 SystemState LEDController::handleBlinking(uint32_t timeInStateMs)
 {
 	if (timeInStateMs > mTotalBlinkDurationMs) {
@@ -117,7 +165,7 @@ SystemState LEDController::handleBlinking(uint32_t timeInStateMs)
 		//setRequestedState(LEDState.OFF);
 		setDefaultState();
 		setOff();
-		setColor(DEFAULT_COLOR);
+		// setColor(mDefaultColor);
 		return SystemState::OFF;
 	}
 
@@ -236,16 +284,21 @@ SystemState LEDController::returnOffMorse()
 	Serial.printf("Loop state: %d\n", (int)mLoopMsg);
 #endif
 
-	setDefaultState();
+	// if (mDefaultState == LEDState::MORSE)
+	// {
+	// 	setDefaultState();
+	// }
 
-	setOff();
-	return SystemState::OFF;
+	return defaultStateTransfer(false);
+	
+	// setOff();
+	// return SystemState::OFF;
 }
 
 void LEDController::setDefaultState()
 {
 	setRequestedState(mDefaultState);
-	// setColor(DEFAULT_COLOR);
+	// setColor(mDefaultColor);
 }
 
 void LEDController::setRequestedState(LEDState state)
@@ -254,6 +307,11 @@ void LEDController::setRequestedState(LEDState state)
 #ifdef DEBUG
 	Serial.printf("Setting state to %d\n", mRequestedState);
 #endif
+}
+
+LEDState LEDController::getRequestedState()
+{
+	return mRequestedState;
 }
 
 void LEDController::setOff()
@@ -275,18 +333,36 @@ void LEDController::setOn()
 #endif
 }
 
-void LEDController::setColor(RGBColor wrgb)
+void LEDController::setColorLock(bool locked)
 {
-	mLEDDriver->setColor(wrgb);
+	mColorLocked = locked;
 }
 
-void LEDController::setColor(uint32_t wrgb)
+void LEDController::setColor(RGBColor wrgb, bool ignoreLock)
 {
-	mLEDDriver->setColor(RGBColor::fromUInt32(wrgb));
+	if (!mColorLocked || ignoreLock)
+	{
+		mLEDDriver->setColor(wrgb);
+	}
+}
+
+void LEDController::setColor(uint32_t wrgb, bool ignoreLock)
+{
+	if (!mColorLocked || ignoreLock)
+	{
+		mLEDDriver->setColor(RGBColor::fromUInt32(wrgb));
+	}
+}
+
+void LEDController::configBrightness(uint8_t maxBrightness, uint8_t minBrightness)
+{
+	mMaxBrightness = maxBrightness;
+	mMinBrightness = minBrightness;
 }
 
 void LEDController::setBrightness(uint8_t brightness)
 {
+	mBrightness = brightness;
 	mLEDDriver->setBrightness(brightness);
 }
 

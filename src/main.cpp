@@ -35,7 +35,7 @@ LEDController mLEDController(&mNeoPixelDriver);
 TimeoutTimer tt(1000);
 #endif
 
-#define DEFAULT_CAN_TIMEOUT 2000
+#define DEFAULT_CAN_TIMEOUT 500
 int32_t mValidCANTimeout = 0;
 
 void setup()
@@ -99,8 +99,6 @@ void loop()
 	if (packetSize)
 	{
 		mValidCANTimeout = DEFAULT_CAN_TIMEOUT;
-		mOnboardLEDController.setColor(0x00FFBF00);
-		mOnboardLEDController.configureDefaultState(LEDState::BLINK);
 
 		uint8_t receivedData[packetSize];
 		for (int i = 0; i < packetSize; i++) {
@@ -141,6 +139,13 @@ void loop()
 				{
 					mOnboardLEDController.setColor(0x0000FF00);
 					mOnboardLEDController.configureDefaultState(LEDState::FIXED_ON);
+					mOnboardLEDController.setRequestedState(LEDState::FIXED_ON);
+				}
+				else
+				{
+					mOnboardLEDController.configureDefaultState(LEDState::BLINK);
+					mOnboardLEDController.setRequestedState(LEDState::BLINK);
+					mOnboardLEDController.setColor(0x00FFBF00);
 				}
 			}
 		}
@@ -150,6 +155,7 @@ void loop()
 	{
 		mOnboardLEDController.setColor(0x00FF0000);
 		mOnboardLEDController.configureDefaultState(LEDState::BLINK);
+		mOnboardLEDController.setRequestedState(LEDState::BLINK);
 	}
 
 #ifdef DEBUG
@@ -281,7 +287,8 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		}
 		case APIClass::COMM_LOSS:
 		{
-			mLEDController.setColor(RED);
+			mLEDController.setColorLock(true);
+			mLEDController.setColor(RED, true);
 			mLEDController.setBrightness(0xFF);
 			mLEDController.configureDefaultState(LEDState::MORSE);
 			mLEDController.configMessage("SOS", true);
@@ -289,12 +296,18 @@ void handleCANPacket(uint8_t* data, int packetSize, APIClass apiClass, APIIndex 
 		}
 		case APIClass::COMM_RESTORED:
 		{
-			mLEDController.setColor(DEFAULT_COLOR);
 			mLEDController.setBrightness(0xFF);
-			mLEDController.configureDefaultState(LEDState::FIXED_ON);
-			mLEDController.configureBlink(5, 250);
-			mLEDController.setColor(GREEN);
+			mLEDController.setColor(GREEN, true);
+			mLEDController.configureDefaultState(LEDState::FADE);
 			mLEDController.setRequestedState(LEDState::BLINK);
+			break;
+		}
+		case APIClass::FADE:
+		{
+#ifdef DEBUG
+	Serial.println("Setting mode to fade!");
+#endif
+			mLEDController.setRequestedState(LEDState::FADE);
 			break;
 		}
 		case APIClass::MORSE:
