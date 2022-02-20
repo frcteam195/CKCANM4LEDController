@@ -56,6 +56,7 @@ void setup()
 	mOnboardLED.begin();
 	mOnboardLEDController.init();
 	mOnboardLEDController.configureDefaultState(LEDState::BLINK);
+	mOnboardLEDController.configureBlink(1, 500);
 	mOnboardLEDController.setColor(0x00FF0000);
 	mOnboardLEDController.setBrightness(0xFF);
 	mOnboardLEDController.setRequestedState(LEDState::BLINK);
